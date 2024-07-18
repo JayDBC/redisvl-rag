@@ -1,0 +1,11 @@
+redis
+redisvl
+langchain
+langchain-community
+langchain-huggingface
+langchain_openai
+tiktoken
+unstructured
+sentence-transformers
+pandas
+pdf2image
