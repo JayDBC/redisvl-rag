@@ -3,9 +3,8 @@ redisvl
 langchain
 langchain-community
 langchain-huggingface
-langchain_openai
+langchain-openai
+openai
 tiktoken
 unstructured
 sentence-transformers
-pandas
-pdf2image
