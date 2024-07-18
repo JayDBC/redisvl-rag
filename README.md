@@ -2,7 +2,7 @@
 
 ![Redis](https://redis.io/wp-content/uploads/2024/04/Logotype.svg?auto=webp&quality=85,75&width=120)
 
-A simple RAG implementation using Lang Chain with Redis as the VectorDB.
+A simple RAG implementation using Lang Chain with Redis as the VectorDB.<br>
 This code also leverages Redis VL as a utility which provides a declarative way to create a search index as well an OOB Semantic Cache Implemenation
 
 
