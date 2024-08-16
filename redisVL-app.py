@@ -229,6 +229,13 @@ def load_dict_from_file(file_path):
         data = json.load(file)
     return data
 
+def load_dict_to_redis(file_path, key_prefix):
+    data = load_dict_from_file(file_path)
+    for key, value in data.items():
+        for attr, attr_val in value.items():
+            rds.hset(key_prefix + key, attr, attr_val)
+
+
 def main():
 
     warnings.filterwarnings("ignore")
@@ -255,11 +262,11 @@ def main():
         )
     
 
-    #LOAD METADATA
-    doc_meta = load_dict_from_file("./doc-metadata.json")
-    for key, value in doc_meta.items():
-        for attr, attr_val in value.items():
-            rds.hset("metadata:doc:" + key, attr, attr_val)
+    #LOAD DOC METADATA
+    load_dict_to_redis("./doc-metadata.json", "metadata:doc:")
+
+    #LOAD USER PROFILES
+    load_dict_to_redis("./user-profiles.json", "user:")
 
 
     #INITIALIZE SEARCH INDEX

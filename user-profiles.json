@@ -1,0 +1,17 @@
+{
+    "jay" : {
+        "name" : "Jay Dastur",
+        "dept" : "technology"
+    },
+
+    "dan" : {
+        "name" : "Dan Kowalski",
+        "dept" : "GLOBAL"
+    },
+
+    "carly" : {
+        "name" : "Carly Steets",
+        "sector" : "healthcare"
+    }
+
+}

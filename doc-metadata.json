@@ -1,0 +1,25 @@
+{
+    "aapl-10k-2023" : {
+        "sector" : "technology,manufacturing",
+        "period" : "2023",
+        "descriptor" : "Apple,AAPL,10k"
+    },
+
+    "amzn-10k-2023" : {
+        "sector" : "retail,technology",
+        "period" : "2023",
+        "descriptor" : "Amazon,AMZN,10k"
+    },
+
+    "cvs-10k-2023" : {
+        "sector" : "healthcare,retail",
+        "period" : "2023",
+        "descriptor" : "CVS,Pharmacy,10k"
+    },
+
+    "jnj-10k-2023" : {
+        "sector" : "healthcare,manufacturing",
+        "period" : "2023",
+        "descriptor" : "JNJ,J&J,Johnson & Johnson,10k"
+    }
+}

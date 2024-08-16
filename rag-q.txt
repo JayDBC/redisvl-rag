@@ -1,5 +1,5 @@
 show me net sales for Apple, with YoY growth
-list products sold by apple along with sales
+list products sold by apple and their corresponding sales
 what percent of apple's  sales came from china 
 
 show me net sales for JNJ, with YoY growth
