@@ -1,9 +1,8 @@
-# RAG Implementation Using Lang Chain OpenAI and Redis VL.
+# AI Document Chat Bot - RAG Implementation Using OpenAI and Redis VL.
 
 ![Redis](https://redis.io/wp-content/uploads/2024/04/Logotype.svg?auto=webp&quality=85,75&width=120)
 
-A simple RAG implementation using Lang Chain with Redis as the VectorDB.<br>
-This code also leverages Redis VL as a utility which provides a declarative way to create a search index as well an OOB Semantic Cache Implemenation
+An Document Chat Bot, with data governance, hybrid search and semantic caching<br>
 
 
 ## Common Tools
