@@ -1,0 +1,11 @@
+show me net sales for Apple, with YoY growth
+list products sold by apple along with sales
+what percent of apple's  sales came from china 
+
+show me net sales for JNJ, with YoY growth
+list revenue from business segments at JNJ
+what are the total number of employees at JNJ
+
+list amazon's line of business with revenue
+describe the diversity initiative at amazon
+what legal issues is amazon facing?

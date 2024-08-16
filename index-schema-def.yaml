@@ -1,0 +1,23 @@
+version: '0.1.0'
+
+index:
+  name: idx:rag
+  prefix: docs:10k
+  storage_type: json
+
+fields:
+    - name: source
+      type: text
+    - name: sector
+      type: tag
+    - name: period
+      type: tag
+    - name: content
+      type: text
+    - name: vector_embedding
+      type: vector   
+      attrs:
+        algorithm: hnsw
+        dims: 384
+        distance_metric: cosine
+        datatype: float32
