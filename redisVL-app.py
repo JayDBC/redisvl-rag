@@ -90,21 +90,22 @@ def load_redis(index, data):
 def process_data(chunk):    
     return chunk
 
-def get_user_dept(user):
+def get_user_sector(user):
     global rds
-    return rds.hget(f"user:{user}", "dept")
+    return rds.hget(f"user:{user}", "sector")
 
 
 #GET SECUIRTY FILTER
 def get_security_filter(user):
-    user_dept = get_user_dept(user)
+    user_sector = get_user_sector(user)
+    user_sector = user_sector.replace(",","|")
 
-    if user_dept == None:
+    if user_sector == None:
         fc = Tag("sector") == "_NOT_AUTHORIZED_"
-    elif user_dept == "GLOBAL" :
+    elif user_sector == "GLOBAL" :
         fc = Tag("sector") == []
     else:   
-        fc = Tag("sector") == f"{user_dept}"
+        fc = Tag("sector") == f"{user_sector}"
 
     return fc
 
@@ -138,8 +139,8 @@ def do_vector_search(index, query, user) -> str:
     vector_query = VectorQuery(
                         vector=query_vector,
                         vector_field_name="vector_embedding",
-                        return_fields=["content"],
-                        num_results= 5
+                        return_fields=["content","sector","period","source"],
+                        num_results= 6
                     )
 
     # add security filter
@@ -148,9 +149,15 @@ def do_vector_search(index, query, user) -> str:
     # add data filter
     add_query_filter(vector_query, get_data_filter(query))
     
+    # execute vector search
     results = index.query(vector_query)
-    content = "\n".join([result["content"] for result in results])
-    return content
+
+    return results
+
+def get_llm_context(results) -> str:
+        content = "\n".join([result["content"] for result in results])
+        return content
+
 
 #ANSWER QUERY - via RAG
 def answer_question(index, query, user):
@@ -162,23 +169,26 @@ def answer_question(index, query, user):
 
     answer = ""
 
-
     #Check LLM cache, do not check cache when explicit filters defined
     if get_data_filter(query) == None:
         cached_result_list = llmcache.check(prompt = get_query_part(query))
         if cached_result_list:
             cached_result = cached_result_list[0]
-            cache_department = cached_result['metadata']['dept']
+            cache_sector = cached_result['metadata']['sector']
+
             #GLOBAL can see all cached responses, except negative response
-            if get_user_dept(user) == "GLOBAL" and cached_result['response'] != get_negative_response():
+            if get_user_sector(user) == "GLOBAL" and cached_result['response'] != get_negative_response():
                 answer = f"$$$ I found a similar question in my cache $$$\n{cached_result['response']}"
                 return answer
-            elif cache_department.find(get_user_dept(user)) > -1:
+            elif get_user_sector(user).find(cache_sector) > -1:
                 answer = f"$$$ I found a similar question in my cache $$$\n{cached_result['response']}"
                 return answer
 
    
-    context = do_vector_search(index, query, user)
+    results = do_vector_search(index, query, user)
+
+    context = get_llm_context(results)
+
     response = openai.chat.completions.create(
                     model="gpt-3.5-turbo",
                     messages=[
@@ -193,11 +203,11 @@ def answer_question(index, query, user):
 
     #Add to semantic cache, only cache when there is no contextual filter
     if get_data_filter(query) == None:
-        dept = get_user_dept(user)
+        sector = results[0]['sector']
         llmcache.store(
                 prompt= get_query_part(query),
                 response= answer,
-                metadata={"dept": dept}
+                metadata={"sector": sector}
             )
 
     return answer
@@ -292,12 +302,13 @@ def main():
             load_folder(abs_path, index)
         else:
             load_file(abs_path, index)
+
         print("[redis-vl-app] Document Loading Complete")
 
 
     #LOAD THE USER PROFILE FOR DATA GOVERNANCE
     user = input("Enter your user profile: ")
-    user_sector = rds.hget(f"user:{user}", "dept")
+    user_sector = rds.hget(f"user:{user}", "sector")
     if user_sector == None :
         print("Could not load your user profile, Please try Again !!")
         return
@@ -317,7 +328,7 @@ def main():
             print(answer)
 
     
-    clear_cache = input("Clear the LLM Cache ? [y/n]")
+    clear_cache = input("Clear the LLM Cache ? [y/n]: ")
     if clear_cache == "y":
         llmcache.clear()
 

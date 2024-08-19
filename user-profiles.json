@@ -1,17 +1,21 @@
 {
     "jay" : {
         "name" : "Jay Dastur",
-        "dept" : "technology"
+        "sector" : "retail,technology"
     },
 
     "dan" : {
         "name" : "Dan Kowalski",
-        "dept" : "GLOBAL"
+        "sector" : "GLOBAL"
     },
 
     "carly" : {
         "name" : "Carly Steets",
         "sector" : "healthcare"
-    }
+    },
 
+    "marco" : {
+        "name" : "Marco Mankerious",
+        "sector" : "healthcare,technology"
+    }
 }
