@@ -4,6 +4,9 @@ import redis
 import openai
 import json
 
+import time
+from datetime import datetime
+
 from langchain_community.document_loaders import UnstructuredFileLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
@@ -27,7 +30,7 @@ def get_connection(REDIS_URL):
 def load_folder(folder_path, index):
     docs = [os.path.join(folder_path, file) for file in os.listdir(folder_path)]
     for doc in docs:
-        if os.path.isdir(doc) == False:
+        if os.path.isdir(doc) == False and doc.find(".pdf") > -1:
             load_file(doc, index)
 
     return
@@ -63,6 +66,9 @@ def prepare_data(chunks, embeddings, file_path):
     period = rds.hget(f"metadata:doc:{file_name}", "period")
     sector = rds.hget(f"metadata:doc:{file_name}", "sector")
     descriptor = rds.hget(f"metadata:doc:{file_name}", "descriptor")
+
+    if descriptor == None:
+        descriptor = ""
 
     data = []
     for i, chunk in enumerate(chunks):
@@ -178,10 +184,10 @@ def answer_question(index, query, user):
 
             #GLOBAL can see all cached responses, except negative response
             if get_user_sector(user) == "GLOBAL" and cached_result['response'] != get_negative_response():
-                answer = f"$$$ I found a similar question in my cache $$$\n{cached_result['response']}"
+                answer = f"[CACHED RESPONSE]\n{cached_result['response']}"
                 return answer
             elif get_user_sector(user).find(cache_sector) > -1:
-                answer = f"$$$ I found a similar question in my cache $$$\n{cached_result['response']}"
+                answer = f"[CACHED RESPONSE]\n{cached_result['response']}"
                 return answer
 
    
@@ -201,8 +207,8 @@ def answer_question(index, query, user):
     # Response provided by LLM
     answer =  response.choices[0].message.content
 
-    #Add to semantic cache, only cache when there is no contextual filter
-    if get_data_filter(query) == None:
+    #Add to semantic cache, only cache when there is no contextual filter and positive answer
+    if get_data_filter(query) == None and answer != get_negative_response():
         sector = results[0]['sector']
         llmcache.store(
                 prompt= get_query_part(query),
@@ -245,7 +251,15 @@ def load_dict_to_redis(file_path, key_prefix):
         for attr, attr_val in value.items():
             rds.hset(key_prefix + key, attr, attr_val)
 
+def time_difference(ts1, ts2):
+    # Convert Unix timestamps to datetime objects
+    dt1 = datetime.fromtimestamp(ts1)
+    dt2 = datetime.fromtimestamp(ts2)
+    delta = abs(dt2 - dt1)
+    minutes, seconds = divmod(delta.total_seconds(), 60) 
+    return f"{int(minutes)}:{int(seconds)}"
 
+#MAIN
 def main():
 
     warnings.filterwarnings("ignore")
@@ -272,9 +286,6 @@ def main():
         )
     
 
-    #LOAD DOC METADATA
-    load_dict_to_redis("./doc-metadata.json", "metadata:doc:")
-
     #LOAD USER PROFILES
     load_dict_to_redis("./user-profiles.json", "user:")
 
@@ -298,12 +309,17 @@ def main():
         #LOAD DATA
         abs_path = input("Enter Absolute Path of Document or Folder : ")
         print("[redis-vl-app] Loading Documents")
+        start_time = int(time.time())
         if os.path.isdir(abs_path) == True:
-            load_folder(abs_path, index)
+                #LOAD DOC METADATA
+                load_dict_to_redis(os.path.join(abs_path, "doc-metadata.json"), "metadata:doc:")
+                load_folder(abs_path, index)
         else:
             load_file(abs_path, index)
 
-        print("[redis-vl-app] Document Loading Complete")
+        end_time = int(time.time())
+        exec_time = time_difference(start_time, end_time)
+        print(f"[redis-vl-app] Document Loading Completed {exec_time}")
 
 
     #LOAD THE USER PROFILE FOR DATA GOVERNANCE
