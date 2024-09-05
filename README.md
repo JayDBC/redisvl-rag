@@ -2,7 +2,7 @@
 
 ![Redis](https://redis.io/wp-content/uploads/2024/04/Logotype.svg?auto=webp&quality=85,75&width=120)
 
-An Document Chat Bot, with data governance, hybrid search and semantic caching<br>
+A Document Chat Bot, with data governance, hybrid search and semantic caching<br>
 Set REDIS_HOST, REDIS_PORT, REDIS_PASSWORD env variables.<br>
 This uses gpt-3.5-turbo as the LLM, set OPENAI_API_KEY env variable with your API Key<br>
 Run redisVL-app.py and follow the prompts.<br>
