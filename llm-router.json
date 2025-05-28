@@ -1,0 +1,14 @@
+[
+    {
+        "name": "general knowledge", 
+        "references": ["movies","entertainment","travel","politics","food", "beverage", "cooking", "nature", "history","geography","music"]
+    },
+    {
+        "name": "reject", 
+        "references": ["love","romance","personal","sexual","racism","violence", "crime" ]
+    },
+    {
+        "name": "finance", 
+        "references": ["financial data","income revenue","profit loss","company corporation","financial analysis", "legal challenges"]
+    }
+]

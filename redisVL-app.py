@@ -11,15 +11,23 @@ from langchain_community.document_loaders import UnstructuredFileLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 from redisvl.extensions.llmcache import SemanticCache
+from redisvl.extensions.router import Route, SemanticRouter
+
 from redisvl.index import SearchIndex
 from redisvl.query import VectorQuery
 from redisvl.query.filter import Text, Tag
 from redisvl.utils.vectorize import HFTextVectorizer
 
+import utils
+from utils import RateLimiter
+from utils import HFLocalLLM
+
 #GLOBAL VARIABLES
 rds = None
 llmcache = None
 em = None
+rate_limiter = None
+local_llm = None
 
 
 
@@ -98,7 +106,7 @@ def process_data(chunk):
 
 def get_user_sector(user):
     global rds
-    return rds.hget(f"user:{user}", "sector")
+    return rds.hget(f"rag:users:{user}", "sector")
 
 
 #GET SECUIRTY FILTER
@@ -127,7 +135,8 @@ def get_data_filter(query):
 
 def add_query_filter(query, filter):
     if filter != None:
-        filter_orig = query.get_filter()
+        #filter_orig = query.get_filter()
+        filter_orig = query.filter
         filter_new = filter_orig & filter
         query.set_filter(filter_new)
     return
@@ -166,7 +175,7 @@ def get_llm_context(results) -> str:
 
 
 #ANSWER QUERY - via RAG
-def answer_question(index, query, user):
+def answer_question(index, query, user, route_name):
 
     SYSTEM_PROMPT = """You are a helpful financial analyst assistant that has access
     to public financial 10k documents in order to answer users questions about company
@@ -182,7 +191,7 @@ def answer_question(index, query, user):
             cached_result = cached_result_list[0]
             cache_sector = cached_result['metadata']['sector']
 
-            #GLOBAL can see all cached responses, except negative response
+
             if get_user_sector(user) == "GLOBAL" and cached_result['response'] != get_negative_response():
                 answer = f"[CACHED RESPONSE]\n{cached_result['response']}"
                 return answer
@@ -190,9 +199,34 @@ def answer_question(index, query, user):
                 answer = f"[CACHED RESPONSE]\n{cached_result['response']}"
                 return answer
 
-   
-    results = do_vector_search(index, query, user)
 
+    #ROUTE TO LOCAL LLM
+    if route_name != "finance":
+        cached_result_list = llmcache.check(prompt = query)
+        if cached_result_list:
+            cached_result = cached_result_list[0]
+            answer = f"[CACHED RESPONSE]\n{cached_result['response']}"
+            return answer 
+        elif route_name == "reject": 
+            return "[Routing >> Guardrail] This question violates the terms of our user agreement & will not be answered."       
+        else :
+            print("[Route >> Local LLM] This is a generic question, I am passing this question to the local LLM")
+            answer = local_llm.ask_llm(query)
+            llmcache.store(
+                prompt= query,
+                response= answer,
+                metadata={"sector": "general knowledge"}
+            )
+            return answer
+
+
+    #RATE LIMIT CHECK
+    allow_call = rate_limiter.is_allowed(f"rag:users:{user}")
+    if allow_call == False:
+        return "[LIMIT EXCEEDED]You have exceeded your API call limit, try after some time."
+
+    #ROUTE TO RAG PIPELINE
+    results = do_vector_search(index, query, user)
     context = get_llm_context(results)
 
     response = openai.chat.completions.create(
@@ -274,6 +308,12 @@ def main():
     rds = get_connection(REDIS_URL)
     print(f"[redis-vl-app] Test Redis Connection: {rds.ping()}")
 
+    #EMBEDDING MODEL
+    print(f"[redis-vl-app] Loading the embedding model")
+    os.environ["TOKENIZERS_PARALLELISM"] = "false"
+    global em
+    em = HFTextVectorizer("sentence-transformers/all-MiniLM-L6-v2")    
+
 
     #SEMANTIC CACHE
     global llmcache
@@ -286,19 +326,36 @@ def main():
         )
     
 
-    #LOAD USER PROFILES
-    load_dict_to_redis("./user-profiles.json", "user:")
+    #LLM ROUTER
+    llm_routes = utils.load_dict_from_file("./llm-router.json")
 
+    llm_router = SemanticRouter(
+        name="router",
+        vectorizer = em,
+        routes = llm_routes,
+        redis_client = rds,
+        overwrite=True
+    )
+
+
+
+    #RATE LIMITER
+    global rate_limiter
+    rate_limiter = RateLimiter(rds, "rag:limiter:", window=20)
+
+    #LOCAL LLM
+    global local_llm
+    local_llm = HFLocalLLM()
+
+
+    #LOAD USER PROFILES
+    load_dict_to_redis("./user-profiles.json", "rag:users:")
 
     #INITIALIZE SEARCH INDEX
     index = init_index(REDIS_URL, "./index-schema-def.yaml")
     print(f"[redis-vl-app] Index Exists: {index.exists()}")
 
-    #EMBEDDING MODEL
-    print(f"[redis-vl-app] Loading the embedding model")
-    os.environ["TOKENIZERS_PARALLELISM"] = "false"
-    global em
-    em = HFTextVectorizer("sentence-transformers/all-MiniLM-L6-v2")
+
 
     prompt_load_data = input("Would you like to reload data [y/n]: ")
 
@@ -324,7 +381,7 @@ def main():
 
     #LOAD THE USER PROFILE FOR DATA GOVERNANCE
     user = input("Enter your user profile: ")
-    user_sector = rds.hget(f"user:{user}", "sector")
+    user_sector = rds.hget(f"rag:users:{user}", "sector")
     if user_sector == None :
         print("Could not load your user profile, Please try Again !!")
         return
@@ -338,9 +395,12 @@ def main():
         if question == "bye" or question == "quit":
             break
         else:   
+            #CHECK THE ROUTE
+            route_match = llm_router(question, distance_threshold= 2.0)
+            route_name = route_match.name
+
             #QUERY THE DATA
-            #results = do_vector_search(index, question, user)
-            answer = answer_question(index, question, user)
+            answer = answer_question(index, question, user, route_name)
             print(answer)
 
     

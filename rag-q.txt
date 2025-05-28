@@ -1,6 +1,12 @@
 show me net sales for Apple, with YoY growth
+show me net sales for Apple, with Year Over Year growth
+
 list products sold by apple and their corresponding sales
-what percent of apple's  sales came from china 
+list the sales from each apple product
+
+what pct of apple  sales came from china 
+china contributes to what percent of apple sales
+
 what pct of Apple's revenue come from china vs United States
 
 show me net sales for JNJ, with YoY growth
@@ -9,4 +15,6 @@ what are the total number of employees at JNJ
 
 list amazon's line of business with revenue
 describe the diversity initiative at amazon
+
 what legal issues is amazon facing?
+what lawsuites is amazon facing? 
