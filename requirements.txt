@@ -1,5 +1,5 @@
 redis
-redisvl
+redisvl==0.3.6
 langchain
 langchain-community
 langchain-huggingface
@@ -8,3 +8,5 @@ openai
 tiktoken
 unstructured
 sentence-transformers
+torch
+ml_dtypes
