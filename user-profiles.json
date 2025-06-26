@@ -1,21 +1,25 @@
 {
     "jay" : {
         "name" : "Jay Dastur",
-        "sector" : "retail,technology"
+        "sector" : "retail,technology",
+        "call_limit": 100
     },
 
     "dan" : {
         "name" : "Dan Kowalski",
-        "sector" : "GLOBAL"
+        "sector" : "GLOBAL",
+        "call_limit": 5
     },
 
     "carly" : {
         "name" : "Carly Steets",
-        "sector" : "healthcare"
+        "sector" : "healthcare",
+        "call_limit": 5
     },
 
     "marco" : {
         "name" : "Marco Mankerious",
-        "sector" : "healthcare,technology"
+        "sector" : "healthcare,technology",
+        "call_limit": 1
     }
 }
