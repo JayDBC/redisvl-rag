@@ -7,6 +7,8 @@ langchain-openai
 openai
 tiktoken
 unstructured
-sentence-transformers
+sentence-transformers==3.2.1
+safetensors==0.4.5
+transformers==4.56.0.dev0
 torch
 ml_dtypes
